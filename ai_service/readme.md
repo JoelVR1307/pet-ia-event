@@ -1,35 +1,78 @@
-Stanford Dogs Dataset
----------------------
+# Pet ID AI — Servicio de IA (Flask + TensorFlow)
 
-For more information about the dataset, please visit the dataset website:
-  http://vision.stanford.edu/aditya86/ImageNetDogs/
+Servicio Flask que clasifica la raza de un perro en una imagen y expone endpoints para salud, predicción y listado de razas. Usa un modelo Keras y MobileNetV2 para verificar si la imagen contiene un perro.
 
-If you use this dataset in a publication, please cite the dataset as
-described on the website.
+## Requisitos
 
-File Information:
- - images/
-    -- Images of different breeds are in separate folders
- - annotations/
-    -- Bounding box annotations of images
- - file_list.mat
-    -- List of all files in the dataset
- - train_list.mat
-    -- List and labels of all training images in dataset
- - test_list.mat
-    -- List and labels of all test images in dataset
+- Python 3.10+
+- `pip` instalado
+- (Opcional) GPU con drivers/CUDA para acelerar inferencia
 
-Train splits:
- In order to test with fewer than 100 images per class, the first
- n indices for each class in train_list.mat were used, where n is
- the number of training images per class.
+## Instalación
 
-Features (train_data.mat, test_data.mat):
- - train_data/test_data
-   -- contains the feature matrix after histogram intersection kernel has been applied
- - train_fg_data/test_fg_data
-   -- contains the feature matrix before applying the histogram intersection kernel
- - train_info/test_info
-   -- contains the labels and ids for the corresponding image in the feature matrix
+1. Crear entorno virtual (Windows):
+   ```powershell
+   python -m venv venv
+   .\venv\Scripts\activate
+   ```
+2. Instalar dependencias:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Verificar que existen los archivos de modelo en `model_data/`:
+   - `best_model.keras`
+   - `class_labels.json`
 
-For more information, please contact Aditya Khosla at aditya86@cs.stanford.edu.
+## Ejecución
+
+Arranca el servidor en `http://localhost:5000`:
+```bash
+python app.py
+```
+CORS está habilitado, no requiere configuración adicional.
+
+## Endpoints
+
+- `GET /health`
+  - Estado del servicio y carga de modelos.
+- `POST /predict`
+  - `multipart/form-data` con campo de archivo `image`.
+  - Respuesta:
+    ```json
+    {
+      "success": true,
+      "breed": "Golden Retriever",
+      "confidence": 0.87,
+      "top_5_predictions": [ { "breed": "...", "confidence": 0.12 } ],
+      "model_info": {
+        "architecture": "MobileNetV2",
+        "dataset": "Stanford Dogs Dataset",
+        "num_classes": 120,
+        "validation_accuracy": 0.7329
+      }
+    }
+    ```
+- `GET /breeds`
+  - Devuelve listado de razas conocidas por el modelo.
+
+## Ejemplos
+
+- Salud:
+  ```bash
+  curl http://localhost:5000/health
+  ```
+- Predicción:
+  ```bash
+  curl -X POST http://localhost:5000/predict \
+    -F image=@./perro.jpg
+  ```
+- Razas disponibles:
+  ```bash
+  curl http://localhost:5000/breeds
+  ```
+
+## Notas
+
+- Este servicio no lee variables de entorno para el puerto (usa 5000). Si necesitas otro puerto, modifica `app.py`.
+- El backend (NestJS) consume este servicio en `AI_SERVICE_URL` (por defecto `http://localhost:5000`).
+- Si `best_model.keras` o `class_labels.json` no están disponibles, `/predict` responderá error.

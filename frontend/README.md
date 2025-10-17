@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# Pet ID AI — Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación web en React para gestionar mascotas, autenticarse y realizar predicciones de raza de perros. Este frontend se integra con el backend (NestJS) y con el servicio de IA a través del backend.
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Node.js 18+ (recomendado 20+)
+- Backend en `http://localhost:3000` (NestJS)
+- Servicio de IA en `http://localhost:5000` (Flask) — utilizado por el backend
 
-## React Compiler
+## Instalación y ejecución
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+1. Instala dependencias:
+   
+   ```bash
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+2. Crea el archivo `.env` en `frontend/` con la URL del backend:
+   
+   ```env
+   VITE_BACKEND_URL=http://localhost:3000
+   ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+3. Arranca el modo desarrollo y abre `http://localhost:5173`:
+   
+   ```bash
+   npm run dev
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+4. Compila y vista previa de producción:
+   
+   ```bash
+   npm run build
+   npm run preview
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Rutas principales
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `/login` — Inicio de sesión
+- `/register` — Registro de usuarios
+- `/dashboard` — Panel principal (protegido)
+- `/predict` — Predicción de raza de perro (protegido)
+- `/pet/:petId` — Detalle de mascota (protegido)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Integración con el backend
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Base de API: `VITE_BACKEND_URL` (por defecto `http://localhost:3000`).
+- Autenticación: los tokens JWT se guardan en `localStorage` (`auth_token`) y el usuario en `auth_user`.
+- Interceptores: si el backend responde `401`, se limpia el token y se redirige a `/login`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Endpoints utilizados
+
+- Auth: `POST /auth/register`, `POST /auth/login`, `GET /auth/validate`.
+- Mascotas: `GET /pets`, `GET /pets/:id`, `POST /pets`, `PATCH /pets/:id`, `DELETE /pets/:id`.
+  - Crea/actualiza con `multipart/form-data`.
+  - Campo de imagen: `photo`.
+- Predicción: `POST /prediction/predict`.
+  - `multipart/form-data` con el campo de archivo `image`.
+
+## Proxy opcional (Vite)
+
+Este proyecto incluye un proxy en `vite.config.ts` para `/api` hacia `http://localhost:3000`. Actualmente el cliente usa `VITE_BACKEND_URL` y llama directo al backend, por lo que el proxy no es necesario. Si prefieres usar el proxy, ajusta `baseURL` en `src/services/api.service.ts` a `'/api'`.
+
+## Comandos útiles
+
+- `npm run dev` — Desarrollo con Vite en `http://localhost:5173`.
+- `npm run build` — Compilación de producción.
+- `npm run preview` — Vista previa de la build.
+- `npm run lint` — Linting del proyecto.
+
+## Solución de problemas
+
+- `401 Unauthorized`: verifica `JWT_SECRET` en el backend y que el token esté vigente.
+- CORS: configura `FRONTEND_URL` en el backend como `http://localhost:5173`.
+- Predicción fallida: confirma que el servicio de IA esté en `http://localhost:5000` y que el backend tenga `AI_SERVICE_URL` correcto.
+
+## Tecnologías
+
+- React 19 + Vite 7
+- TypeScript
+- Tailwind CSS
+- Axios
+- React Router

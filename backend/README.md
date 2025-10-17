@@ -1,98 +1,99 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Pet ID AI — Backend (NestJS + Prisma)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API para autenticación de usuarios, gestión de mascotas y predicción de razas de perros (vía servicio de IA). Sirve archivos estáticos en `/uploads` para fotos de mascotas.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Requisitos
 
-## Description
+- Node.js 18+ (recomendado 20+)
+- MySQL 8+ accesible (local o remoto)
+- Servicio de IA en `http://localhost:5000` (Flask)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Variables de entorno (`.env`)
 
-## Project setup
-
-```bash
-$ npm install
+```env
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+DATABASE_URL=mysql://USER:PASSWORD@localhost:3306/pet_id_ai
+JWT_SECRET=tu_super_secreto
+AI_SERVICE_URL=http://localhost:5000
 ```
 
-## Compile and run the project
+- `PORT`: puerto del backend (por defecto `3000`).
+- `FRONTEND_URL`: origen permitido para CORS.
+- `DATABASE_URL`: cadena de conexión de MySQL para Prisma.
+- `JWT_SECRET`: clave para firmar/validar JWT.
+- `AI_SERVICE_URL`: URL del servicio Flask.
 
-```bash
-# development
-$ npm run start
+## Instalación y ejecución
 
-# watch mode
-$ npm run start:dev
+1. Instala dependencias:
+   ```bash
+   npm install
+   ```
+2. Genera el cliente de Prisma y aplica migraciones:
+   ```bash
+   npx prisma generate
+   npx prisma migrate dev
+   ```
+3. Arranca en desarrollo:
+   ```bash
+   npm run start:dev
+   ```
+4. Producción:
+   ```bash
+   npm run build
+   npm run start:prod
+   ```
 
-# production mode
-$ npm run start:prod
-```
+## Endpoints principales
 
-## Run tests
+- Raíz: `GET /` — "Hello World!"
 
-```bash
-# unit tests
-$ npm run test
+- Auth (`/auth`)
+  - `POST /auth/register` — público
+  - `POST /auth/login` — público
+  - `GET /auth/validate` — requiere JWT
+  - `GET /auth/profile` — requiere JWT
 
-# e2e tests
-$ npm run test:e2e
+- Mascotas (`/pets`) — requiere JWT
+  - `GET /pets` — lista mascotas del usuario
+  - `GET /pets/:id`
+  - `POST /pets` — `multipart/form-data` con campos `name`, `breed`, `age?`, `photo?`
+  - `PATCH /pets/:id` — `multipart/form-data` (misma estructura)
+  - `DELETE /pets/:id`
+  - Archivos: se sirven en `/uploads/pets/<archivo>`
 
-# test coverage
-$ npm run test:cov
-```
+- Predicción (`/prediction`)
+  - `GET /prediction/health` — verifica disponibilidad del servicio de IA
+  - `POST /prediction/predict` — `multipart/form-data` con archivo `image` (hasta 10MB)
 
-## Deployment
+## CORS y estáticos
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- CORS habilitado para `process.env.FRONTEND_URL` (por defecto `http://localhost:5173`).
+- Archivos estáticos en `/uploads`.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Ejemplos rápidos
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+- Login:
+  ```bash
+  curl -X POST http://localhost:3000/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"user@example.com","password":"123456"}'
+  ```
+- Predicción:
+  ```bash
+  curl -X POST http://localhost:3000/prediction/predict \
+    -H "Authorization: Bearer <TOKEN>" \
+    -F image=@./perro.jpg
+  ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Estructura
 
-## Resources
+- NestJS módulos principales: `AuthModule`, `PetsModule`, `PredictionModule`, `EventsModule`, `PrismaModule`.
+- Guard global JWT aplicado; rutas públicas marcadas con `@Public()`.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Notas
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Asegúrate de que MySQL esté accesible y que `DATABASE_URL` sea correcto.
+- Cambios de puerto u origen requieren actualizar `FRONTEND_URL` y proxies del frontend.
+- Si eliminas/actualizas fotos de mascotas, el servicio gestiona la limpieza en `uploads/pets`.
