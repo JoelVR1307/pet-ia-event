@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pets      Pet[]
+
+  @@map("users")
+}
+
+model Pet {
+  id        Int      @id @default(autoincrement())
+  name      String
+  age       Int?
+  breed     String
+  photoUrl  String?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events    Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("pets")
+}
+
+model Event {
+  id        Int       @id @default(autoincrement())
+  type      EventType
+  date      DateTime
+  notes     String?   @db.Text
+  petId     Int
+  pet       Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([petId])
+  @@map("events")
+}
+
+enum EventType {
+  VET
+  WALK
+  FOOD
+  GROOMING
+  TRAINING
+  OTHER
+}
