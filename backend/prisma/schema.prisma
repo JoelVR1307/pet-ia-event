@@ -18,9 +18,23 @@ model User {
   email     String   @unique
   password  String
   name      String
+  role      UserRole @default(USER)
+  avatar    String?
+  bio       String?  @db.Text
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  pets      Pet[]
+  
+  // Relaciones
+  pets         Pet[]
+  posts        Post[]
+  comments     Comment[]
+  likes        Like[]
+  predictions  Prediction[]
+  
+  // Relaciones médicas (solo para veterinarios)
+  appointments Appointment[] @relation("VeterinarianAppointments")
+  medicalRecords MedicalRecord[] @relation("VeterinarianRecords")
 
   @@map("users")
 }
@@ -30,14 +44,27 @@ model Pet {
   name      String
   age       Int?
   breed     String
+  species   Species  @default(DOG)
   photoUrl  String?
+  weight    Float?
+  color     String?
+  gender    Gender?
+  isActive  Boolean  @default(true)
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  events    Event[]
+  
+  // Relaciones
+  events         Event[]
+  posts          Post[]
+  predictions    Prediction[]
+  medicalRecords MedicalRecord[]
+  appointments   Appointment[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([species])
   @@map("pets")
 }
 
@@ -61,5 +88,159 @@ enum EventType {
   FOOD
   GROOMING
   TRAINING
+  VACCINATION
+  MEDICATION
+  CHECKUP
+  EMERGENCY
   OTHER
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  VETERINARIAN
+  MODERATOR
+}
+
+enum Species {
+  DOG
+  CAT
+  BIRD
+  RABBIT
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Modelo para posts sociales
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   @db.Text
+  imageUrl  String?
+  userId    Int
+  petId     Int?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pet       Pet?     @relation(fields: [petId], references: [id], onDelete: SetNull)
+  
+  // Relaciones sociales
+  comments  Comment[]
+  likes     Like[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([petId])
+  @@map("posts")
+}
+
+// Modelo para comentarios
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  userId    Int
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([postId])
+  @@map("comments")
+}
+
+// Modelo para likes
+model Like {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  postId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("likes")
+}
+
+// Modelo para predicciones (analytics)
+model Prediction {
+  id          Int      @id @default(autoincrement())
+  imageUrl    String
+  species     Species
+  breed       String
+  confidence  Float
+  topBreeds   Json     // Array de top 5 predicciones
+  modelInfo   Json     // Información del modelo usado
+  userId      Int
+  petId       Int?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pet         Pet?     @relation(fields: [petId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([petId])
+  @@index([species])
+  @@map("predictions")
+}
+
+// Modelo para citas médicas
+model Appointment {
+  id            Int               @id @default(autoincrement())
+  date          DateTime
+  duration      Int               // Duración en minutos
+  reason        String
+  notes         String?           @db.Text
+  status        AppointmentStatus @default(SCHEDULED)
+  petId         Int
+  veterinarianId Int
+  pet           Pet              @relation(fields: [petId], references: [id], onDelete: Cascade)
+  veterinarian  User             @relation("VeterinarianAppointments", fields: [veterinarianId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([petId])
+  @@index([veterinarianId])
+  @@index([date])
+  @@map("appointments")
+}
+
+// Modelo para historiales médicos
+model MedicalRecord {
+  id            Int      @id @default(autoincrement())
+  diagnosis     String
+  treatment     String   @db.Text
+  medications   String?  @db.Text
+  notes         String?  @db.Text
+  attachments   Json?    // URLs de archivos adjuntos
+  petId         Int
+  veterinarianId Int
+  pet           Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  veterinarian  User     @relation("VeterinarianRecords", fields: [veterinarianId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([petId])
+  @@index([veterinarianId])
+  @@map("medical_records")
 }

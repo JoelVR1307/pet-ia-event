@@ -8,6 +8,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { PetsModule } from './pets/pets.module';
 import { EventsModule } from './events/events.module';
+import { AdminModule } from './admin/admin.module';
+import { SocialModule } from './social/social.module';
+import { MedicalModule } from './medical/medical.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -20,6 +24,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     PredictionModule,
     PetsModule,
     EventsModule,
+    AdminModule,
+    SocialModule,
+    MedicalModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

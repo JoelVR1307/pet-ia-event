@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { Pet } from '../types/pet.types';
+import type { Pet } from '../../types/pet.types';
 
 interface PetCardProps {
   pet: Pet;

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { petService } from '../services/pet.service';
-import type { CreatePetDto, UpdatePetDto } from '../services/pet.service';
-import { predictionService } from '../services/prediction.service';
-import { handleApiError } from '../utils/errorHandler';
-import { validateImageFile, createImagePreview } from '../utils/fileValidation';
-import type { Pet } from '../types/pet.types';
+import { petService } from '../../services/pet.service';
+import type { CreatePetDto, UpdatePetDto } from '../../services/pet.service';
+import { predictionService } from '../../services/prediction.service';
+import { handleApiError } from '../../utils/errorHandler';
+import { validateImageFile, createImagePreview } from '../../utils/fileValidation';
+import type { Pet } from '../../types/pet.types';
 
 interface PetModalProps {
   isOpen: boolean;
