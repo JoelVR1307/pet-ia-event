@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { 
   AdminStats, 
   UserManagement, 
@@ -27,6 +28,7 @@ const AdminDashboardView: React.FC = () => {
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const navigate = useNavigate();
 
   // Filters
   const [userFilters, setUserFilters] = useState<AdminFilters>({});
@@ -157,8 +159,15 @@ const AdminDashboardView: React.FC = () => {
             <p className="text-gray-600">Gestiona y monitorea la plataforma</p>
           </div>
           
-          {/* Notifications */}
+          {/* Actions / Notifications */}
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors cursor-pointer"
+            >
+              <span>Volver al Dashboard</span>
+            </button>
+
             <div className="relative">
               <button className="p-2 text-gray-600 hover:text-gray-900 relative">
                 <span className="text-2xl">🔔</span>

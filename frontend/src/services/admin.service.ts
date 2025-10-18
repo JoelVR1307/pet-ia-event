@@ -19,7 +19,7 @@ import type{
   AuditLog
 } from '../types/admin.types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 class AdminService {
   private api = axios.create({
@@ -29,7 +29,7 @@ class AdminService {
   constructor() {
     // Add auth interceptor
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -41,7 +41,8 @@ class AdminService {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('token');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
           window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -49,20 +50,73 @@ class AdminService {
     );
   }
 
+  // helper to map backend user shape to frontend shape
+  private mapUser(u: any): UserManagement {
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      isActive: u.isActive,
+      createdAt: u.createdAt,
+      lastLogin: u.lastLogin,
+      totalPets: u._count?.pets ?? 0,
+      totalPosts: u._count?.posts ?? 0,
+      totalAppointments: u._count?.appointments ?? 0,
+    };
+  }
+
   // Dashboard Stats
   async getDashboardStats(): Promise<AdminStats> {
-    const response: AxiosResponse<AdminStats> = await this.api.get('/admin/stats');
-    return response.data;
+    const response = await this.api.get('/admin/stats');
+    const data = response.data as any;
+    const veterinariansCount = Array.isArray(data.usersByRole)
+      ? (data.usersByRole.find((r: any) => r.role === 'VETERINARIAN')?._count ?? 0)
+      : 0;
+
+    return {
+      totalUsers: data.totalUsers ?? 0,
+      totalPets: data.totalPets ?? 0,
+      totalPosts: data.totalPosts ?? 0,
+      totalAppointments: data.totalAppointments ?? 0,
+      totalVeterinarians: veterinariansCount,
+      activeUsers: 0,
+      newUsersThisMonth: 0,
+      totalRevenue: 0,
+    };
   }
 
   async getSystemMetrics(): Promise<SystemMetrics> {
-    const response: AxiosResponse<SystemMetrics> = await this.api.get('/admin/metrics');
-    return response.data;
+    try {
+      const response = await this.api.get('/analytics/system/metrics');
+      return response.data as SystemMetrics;
+    } catch {
+      return {
+        cpuUsage: 0,
+        memoryUsage: 0,
+        diskUsage: 0,
+        activeConnections: 0,
+        requestsPerMinute: 0,
+        errorRate: 0,
+        responseTime: 0,
+      };
+    }
   }
 
   async getAnalyticsData(period: '7d' | '30d' | '90d' | '1y' = '30d'): Promise<AnalyticsData> {
-    const response: AxiosResponse<AnalyticsData> = await this.api.get(`/admin/analytics?period=${period}`);
-    return response.data;
+    try {
+      // Placeholder call to confirm backend availability; mapping is not yet implemented
+      await this.api.get(`/analytics/predictions/stats?period=${period}`);
+    } catch {
+      // ignore errors and return empty analytics
+    }
+    return {
+      userGrowth: [],
+      petRegistrations: [],
+      appointmentStats: [],
+      socialActivity: [],
+      revenueData: [],
+    };
   }
 
   // User Management
@@ -75,31 +129,48 @@ class AdminService {
         }
       });
     }
-    
-    const response: AxiosResponse<UserManagement[]> = await this.api.get(`/admin/users?${params}`);
-    return response.data;
+    const response = await this.api.get(`/admin/users?${params}`);
+    const raw = response.data as any[];
+    return raw.map((u) => this.mapUser(u));
   }
 
   async getUserById(id: number): Promise<UserManagement> {
-    const response: AxiosResponse<UserManagement> = await this.api.get(`/admin/users/${id}`);
-    return response.data;
+    const response = await this.api.get(`/admin/users/${id}`);
+    return this.mapUser(response.data);
   }
 
   async updateUser(id: number, data: UpdateUserDTO): Promise<UserManagement> {
-    const response: AxiosResponse<UserManagement> = await this.api.put(`/admin/users/${id}`, data);
-    return response.data;
+    // Only role and active status are supported via admin endpoints
+    if (data.role !== undefined) {
+      await this.api.patch(`/admin/users/${id}/role`, { role: data.role });
+    }
+    if (typeof data.isActive === 'boolean') {
+      const current = await this.getUserById(id);
+      if (current.isActive !== data.isActive) {
+        await this.api.patch(`/admin/users/${id}/toggle-status`);
+      }
+    }
+    // Name/email updates not supported here; fetch latest
+    return this.getUserById(id);
   }
 
   async deleteUser(id: number): Promise<void> {
-    await this.api.delete(`/admin/users/${id}`);
+    // Not supported by backend admin API currently
+    throw new Error('Eliminar usuario no está soportado');
   }
 
   async suspendUser(id: number, reason: string, duration?: number): Promise<void> {
-    await this.api.post(`/admin/users/${id}/suspend`, { reason, duration });
+    const current = await this.getUserById(id);
+    if (current.isActive) {
+      await this.api.patch(`/admin/users/${id}/toggle-status`);
+    }
   }
 
   async unsuspendUser(id: number): Promise<void> {
-    await this.api.post(`/admin/users/${id}/unsuspend`);
+    const current = await this.getUserById(id);
+    if (!current.isActive) {
+      await this.api.patch(`/admin/users/${id}/toggle-status`);
+    }
   }
 
   // Veterinarian Management
@@ -112,7 +183,6 @@ class AdminService {
         }
       });
     }
-    
     const response: AxiosResponse<VeterinarianManagement[]> = await this.api.get(`/admin/veterinarians?${params}`);
     return response.data;
   }
@@ -150,7 +220,6 @@ class AdminService {
         }
       });
     }
-    
     const response: AxiosResponse<ContentModeration[]> = await this.api.get(`/admin/moderation?${params}`);
     return response.data;
   }
@@ -166,8 +235,12 @@ class AdminService {
 
   // Notifications
   async getAdminNotifications(): Promise<AdminNotification[]> {
-    const response: AxiosResponse<AdminNotification[]> = await this.api.get('/admin/notifications');
-    return response.data;
+    try {
+      const response = await this.api.get('/admin/notifications');
+      return response.data as AdminNotification[];
+    } catch {
+      return [];
+    }
   }
 
   async markNotificationAsRead(id: number): Promise<void> {
@@ -237,7 +310,6 @@ class AdminService {
         }
       });
     }
-    
     const response: AxiosResponse<AuditLog[]> = await this.api.get(`/admin/audit-logs/search?${params}`);
     return response.data;
   }

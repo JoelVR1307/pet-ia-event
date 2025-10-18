@@ -6,8 +6,10 @@ import { CreatePostDto } from './dto/create-post.dto';
 export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: number, createPostDto: CreatePostDto) {
+  async create(userId: number, createPostDto: CreatePostDto, file?: Express.Multer.File) {
     const { title, content, imageUrl, petId } = createPostDto;
+    // Si viene archivo, sobreescribe imageUrl con la ruta almacenada
+    const storedImageUrl = file ? `/uploads/posts/${file.filename}` : imageUrl;
 
     // Verificar que la mascota pertenece al usuario si se especifica
     if (petId) {
@@ -27,7 +29,7 @@ export class PostsService {
       data: {
         title,
         content,
-        imageUrl,
+        imageUrl: storedImageUrl,
         userId,
         petId,
       },

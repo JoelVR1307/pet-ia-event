@@ -26,7 +26,7 @@ class MedicalService {
   constructor() {
     // Interceptor para agregar token de autenticación
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -38,7 +38,7 @@ class MedicalService {
   
   async getAppointments(filters?: AppointmentFilters): Promise<Appointment[]> {
     const response = await this.api.get('/appointments', { params: filters });
-    return response.data;
+    return response.data.appointments;
   }
 
   async getAppointmentById(id: number): Promise<Appointment> {
@@ -62,7 +62,7 @@ class MedicalService {
 
   async getMyAppointments(): Promise<Appointment[]> {
     const response = await this.api.get('/appointments/my-appointments');
-    return response.data;
+    return response.data.appointments;
   }
 
   async getUpcomingAppointments(): Promise<Appointment[]> {
@@ -74,7 +74,7 @@ class MedicalService {
   
   async getMedicalRecords(filters?: MedicalRecordFilters): Promise<MedicalRecord[]> {
     const response = await this.api.get('/medical-records', { params: filters });
-    return response.data;
+    return response.data.records;
   }
 
   async getMedicalRecordById(id: number): Promise<MedicalRecord> {
@@ -98,7 +98,7 @@ class MedicalService {
 
   async getPetMedicalHistory(petId: number): Promise<MedicalRecord[]> {
     const response = await this.api.get(`/medical-records/pet/${petId}`);
-    return response.data;
+    return response.data.records;
   }
 
   // ==================== VETERINARIANS ====================

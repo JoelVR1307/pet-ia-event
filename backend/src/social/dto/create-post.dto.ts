@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreatePostDto {
   @IsString({ message: 'El título debe ser una cadena de texto' })
@@ -14,6 +15,7 @@ export class CreatePostDto {
   imageUrl?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt({ message: 'El ID de la mascota debe ser un número entero' })
   petId?: number;
 }

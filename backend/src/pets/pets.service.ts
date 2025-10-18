@@ -26,14 +26,23 @@ export class PetsService {
 
     const photoUrl = file ? `/uploads/pets/${file.filename}` : null;
 
+    // Construir data con campos opcionales
+    const data: any = {
+      name: createPetDto.name,
+      breed: createPetDto.breed,
+      age: createPetDto.age ?? null,
+      photoUrl,
+      userId,
+    };
+
+    if (createPetDto.species !== undefined) data.species = createPetDto.species;
+    if (createPetDto.weight !== undefined) data.weight = createPetDto.weight;
+    if (createPetDto.color !== undefined) data.color = createPetDto.color;
+    if (createPetDto.gender !== undefined) data.gender = createPetDto.gender;
+    if (createPetDto.isActive !== undefined) data.isActive = createPetDto.isActive;
+
     return this.prisma.pet.create({
-      data: {
-        name: createPetDto.name,
-        breed: createPetDto.breed,
-        age: createPetDto.age || null,
-        photoUrl,
-        userId,
-      },
+      data,
     });
   }
 
@@ -99,6 +108,26 @@ export class PetsService {
 
     if (updatePetDto.age !== undefined) {
       updateData.age = updatePetDto.age;
+    }
+
+    if (updatePetDto.species !== undefined) {
+      updateData.species = updatePetDto.species;
+    }
+
+    if (updatePetDto.weight !== undefined) {
+      updateData.weight = updatePetDto.weight;
+    }
+
+    if (updatePetDto.color !== undefined) {
+      updateData.color = updatePetDto.color;
+    }
+
+    if (updatePetDto.gender !== undefined) {
+      updateData.gender = updatePetDto.gender;
+    }
+
+    if (updatePetDto.isActive !== undefined) {
+      updateData.isActive = updatePetDto.isActive;
     }
 
     return this.prisma.pet.update({

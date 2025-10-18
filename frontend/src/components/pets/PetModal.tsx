@@ -18,6 +18,11 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
     name: '',
     breed: '',
     age: '',
+    species: 'DOG',
+    gender: 'UNKNOWN',
+    weight: '',
+    color: '',
+    isActive: true,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -26,12 +31,31 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
   const [error, setError] = useState('');
   const [breedSuggestions, setBreedSuggestions] = useState<Array<{ breed: string; confidence: number }>>([]);
 
+  // Helper: inferir especie a partir del nombre de la raza
+  const inferSpeciesFromBreed = (breed: string) => {
+    const b = breed.toLowerCase();
+    const catBreeds = ['persian','siamese','bengal','maine coon','sphynx','ragdoll','scottish fold','british shorthair','american shorthair','oriental shorthair','abyssinian','devon rex','cornish rex','norwegian forest','siberian'];
+    const dogBreeds = ['labrador','golden retriever','german shepherd','poodle','bulldog','beagle','dachshund','boxer','chihuahua','shih tzu','siberian husky','rottweiler','doberman','great dane','border collie','australian shepherd','belgian malinois','pomeranian','cocker spaniel','english springer','springer spaniel'];
+    const rabbitBreeds = ['lop','dutch','rex','lionhead','netherland dwarf'];
+    const birdIndicators = ['parrot','macaw','cockatiel','budgerigar','budgie','canary','finch','lovebird','parakeet'];
+    if (catBreeds.some((x) => b.includes(x))) return 'CAT';
+    if (dogBreeds.some((x) => b.includes(x))) return 'DOG';
+    if (rabbitBreeds.some((x) => b.includes(x))) return 'RABBIT';
+    if (birdIndicators.some((x) => b.includes(x))) return 'BIRD';
+    return 'OTHER';
+  };
+
   useEffect(() => {
     if (pet) {
       setFormData({
         name: pet.name,
         breed: pet.breed || '',
         age: pet.age?.toString() || '',
+        species: pet.species || 'DOG',
+        gender: pet.gender || 'UNKNOWN',
+        weight: pet.weight?.toString() || '',
+        color: pet.color || '',
+        isActive: pet.isActive ?? true,
       });
       if (pet.photoUrl) {
         setPreviewUrl(getImageUrl(pet.photoUrl));
@@ -57,7 +81,7 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
   };
 
   const resetForm = () => {
-    setFormData({ name: '', breed: '', age: '' });
+    setFormData({ name: '', breed: '', age: '', species: 'DOG', gender: 'UNKNOWN', weight: '', color: '', isActive: true });
     setSelectedFile(null);
     setPreviewUrl('');
     setError('');
@@ -97,10 +121,11 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
       
       if (result.success && result.breed) {
         setBreedSuggestions(result.top_5_predictions || []);
-        
+        const detectedSpecies = inferSpeciesFromBreed(result.breed);
         setFormData(prev => ({
           ...prev,
-          breed: result.breed
+          breed: result.breed,
+          species: detectedSpecies,
         }));
       }
     } catch (err: any) {
@@ -120,7 +145,8 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
   };
 
   const handleBreedSuggestionClick = (breed: string) => {
-    setFormData(prev => ({ ...prev, breed }));
+    const detectedSpecies = inferSpeciesFromBreed(breed);
+    setFormData(prev => ({ ...prev, breed, species: detectedSpecies }));
     setBreedSuggestions([]);
   };
 
@@ -153,28 +179,34 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
       setError('');
 
       if (pet?.id) {
-        // ✅ Editar mascota - UpdatePetDto
         const updateData: UpdatePetDto = {
           name: formData.name.trim(),
           breed: formData.breed.trim(),
           age: parseInt(formData.age),
+          species: formData.species as any,
+          gender: formData.gender as any,
+          color: formData.color || undefined,
+          isActive: formData.isActive,
         };
-
-        // Solo incluir foto si se seleccionó una nueva
+        const weightNum = formData.weight ? parseFloat(formData.weight) : undefined;
+        if (weightNum !== undefined && !Number.isNaN(weightNum)) updateData.weight = weightNum;
         if (selectedFile) {
           updateData.photo = selectedFile;
         }
-
         await petService.updatePet(pet.id, updateData);
       } else {
-        // ✅ Crear mascota - CreatePetDto
         const createData: CreatePetDto = {
           name: formData.name.trim(),
           breed: formData.breed.trim(),
           age: parseInt(formData.age),
           photo: selectedFile!,
+          species: formData.species as any,
+          gender: formData.gender as any,
+          color: formData.color || undefined,
+          isActive: formData.isActive,
         };
-
+        const weightNum = formData.weight ? parseFloat(formData.weight) : undefined;
+        if (weightNum !== undefined && !Number.isNaN(weightNum)) createData.weight = weightNum;
         await petService.createPet(createData);
       }
 
@@ -191,8 +223,8 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-500 bg-opacity-75">
-      <div className="relative w-full max-w-2xl mx-4 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 bg-opacity-75" onClick={onClose}>
+      <div className="relative w-full max-w-2xl mx-4 my-8" onClick={(e) => e.stopPropagation()}>
         <div className="relative bg-white rounded-lg shadow-xl">
           <form onSubmit={handleSubmit}>
             {/* Header */}
@@ -369,6 +401,79 @@ export const PetModal = ({ isOpen, onClose, onSuccess, pet }: PetModalProps) => 
                   required
                   disabled={isLoading}
                 />
+              </div>
+
+              {/* Especie */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Especie</label>
+                <select
+                  value={formData.species}
+                  onChange={(e) => setFormData({ ...formData, species: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  disabled={isLoading}
+                >
+                  <option value="DOG">Perro</option>
+                  <option value="CAT">Gato</option>
+                  <option value="BIRD">Ave</option>
+                  <option value="RABBIT">Conejo</option>
+                  <option value="OTHER">Otro</option>
+                </select>
+              </div>
+
+              {/* Género */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Género</label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  disabled={isLoading}
+                >
+                  <option value="MALE">Macho</option>
+                  <option value="FEMALE">Hembra</option>
+                  <option value="UNKNOWN">Desconocido</option>
+                </select>
+              </div>
+
+              {/* Peso */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Peso (kg)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Ej: 12.5"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Color */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                <input
+                  type="text"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Ej: Blanco y negro"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Activa */}
+              <div className="mb-4 flex items-center gap-3">
+                <input
+                  id="isActive"
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                  disabled={isLoading}
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Mascota activa</label>
               </div>
 
               {/* Error */}

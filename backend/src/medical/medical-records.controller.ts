@@ -15,7 +15,7 @@ export class MedicalRecordsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.VETERINARIAN, UserRole.ADMIN)
   create(@Body() createMedicalRecordDto: CreateMedicalRecordDto, @Request() req) {
-    return this.medicalRecordsService.create(createMedicalRecordDto, req.user.sub);
+    return this.medicalRecordsService.create(createMedicalRecordDto, req.user.id);
   }
 
   @Get()
@@ -36,7 +36,7 @@ export class MedicalRecordsController {
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.medicalRecordsService.findByPet(petId, req.user.sub, req.user.role, pageNum, limitNum);
+    return this.medicalRecordsService.findByPet(petId, req.user.id, req.user.role, pageNum, limitNum);
   }
 
   @Get('veterinarian/:veterinarianId')
@@ -56,7 +56,7 @@ export class MedicalRecordsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.VETERINARIAN)
   findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.medicalRecordsService.findOne(id, req.user.sub, req.user.role);
+    return this.medicalRecordsService.findOne(id, req.user.id, req.user.role);
   }
 
   @Patch(':id')
@@ -67,13 +67,13 @@ export class MedicalRecordsController {
     @Body() updateMedicalRecordDto: UpdateMedicalRecordDto,
     @Request() req,
   ) {
-    return this.medicalRecordsService.update(id, updateMedicalRecordDto, req.user.sub, req.user.role);
+    return this.medicalRecordsService.update(id, updateMedicalRecordDto, req.user.id, req.user.role);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.medicalRecordsService.remove(id, req.user.sub, req.user.role);
+    return this.medicalRecordsService.remove(id, req.user.id, req.user.role);
   }
 }

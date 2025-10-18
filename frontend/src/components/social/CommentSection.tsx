@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Comment, CreateCommentDto } from '../../types/social.types';
+import type { Comment, CreateCommentDto } from '../../types/social.types';
 import { socialService } from '../../services/social.service';
 import moment from 'moment';
 

@@ -32,6 +32,15 @@ class SocialService {
     return response.data;
   }
 
+  async createPostWithImage(formData: FormData): Promise<Post> {
+    const response = await apiService.post('/posts', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
   async updatePost(id: string, postData: UpdatePostDto): Promise<Post> {
     const response = await apiService.patch(`/posts/${id}`, postData);
     return response.data;

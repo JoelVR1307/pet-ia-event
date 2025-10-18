@@ -63,7 +63,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onAddPet }) => {
           <button
             key={index}
             onClick={action.onClick}
-            className={`${action.color} text-white p-4 rounded-lg transition-colors text-left`}
+            className={`${action.color} text-white p-4 rounded-lg transition-colors text-left cursor-pointer`}
           >
             <div className="flex items-center mb-2">
               {action.icon}

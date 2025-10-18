@@ -14,6 +14,7 @@ import { QuickActions } from '../components/dashboard/QuickActions';
 import { UpcomingAppointments } from '../components/dashboard/UpcomingAppointments';
 import { handleApiError } from '../utils/errorHandler';
 import type { DashboardStats as DashboardStatsType } from '../types/dashboard.types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PetStats {
   total: number;
@@ -27,6 +28,7 @@ export const DashboardView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [petToDelete, setPetToDelete] = useState<Pet | null>(null);
   const [dashboardStats, setDashboardStats] = useState<DashboardStatsType>({
@@ -36,6 +38,7 @@ export const DashboardView: React.FC = () => {
     totalAchievements: 0
   });
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadPets();
@@ -136,9 +139,22 @@ export const DashboardView: React.FC = () => {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-gray-600">Gestiona tus mascotas y mantente al día con sus cuidados</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-gray-600">Gestiona tus mascotas y mantente al día con sus cuidados</p>
+          </div>
+          {user?.role === 'ADMIN' && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
+            >
+              <span>Panel Admin</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Dashboard Stats */}
@@ -236,13 +252,13 @@ export const DashboardView: React.FC = () => {
       {isDeleteModalOpen && petToDelete && (
         <DeleteModal
           isOpen={isDeleteModalOpen}
-          onClose={() => {
+          title="Eliminar Mascota"
+          message={`¿Estás seguro de que deseas eliminar a ${petToDelete.name}? Esta acción no se puede deshacer.`}
+          onConfirm={confirmDelete}
+          onCancel={() => {
             setIsDeleteModalOpen(false);
             setPetToDelete(null);
           }}
-          onConfirm={confirmDelete}
-          title="Eliminar Mascota"
-          message={`¿Estás seguro de que deseas eliminar a ${petToDelete.name}? Esta acción no se puede deshacer.`}
         />
       )}
     </div>

@@ -6,6 +6,11 @@ export interface CreatePetDto {
   breed: string;
   age?: number;
   photo?: File;
+  species?: 'DOG' | 'CAT' | 'BIRD' | 'RABBIT' | 'OTHER';
+  weight?: number;
+  color?: string;
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
+  isActive?: boolean;
 }
 
 export interface UpdatePetDto {
@@ -13,6 +18,11 @@ export interface UpdatePetDto {
   breed?: string;
   age?: number;
   photo?: File;
+  species?: 'DOG' | 'CAT' | 'BIRD' | 'RABBIT' | 'OTHER';
+  weight?: number;
+  color?: string;
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
+  isActive?: boolean;
 }
 
 class PetService {
@@ -36,6 +46,11 @@ class PetService {
     if (data.photo) {
       formData.append('photo', data.photo);
     }
+    if (data.species) formData.append('species', data.species);
+    if (data.weight !== undefined) formData.append('weight', data.weight.toString());
+    if (data.color !== undefined) formData.append('color', data.color);
+    if (data.gender) formData.append('gender', data.gender);
+    if (data.isActive !== undefined) formData.append('isActive', String(data.isActive));
 
     const response = await apiService.post<Pet>('/pets', formData, {
       headers: {
@@ -55,6 +70,11 @@ class PetService {
     if (data.photo) {
       formData.append('photo', data.photo);
     }
+    if (data.species) formData.append('species', data.species);
+    if (data.weight !== undefined) formData.append('weight', data.weight.toString());
+    if (data.color !== undefined) formData.append('color', data.color);
+    if (data.gender) formData.append('gender', data.gender);
+    if (data.isActive !== undefined) formData.append('isActive', String(data.isActive));
 
     const response = await apiService.patch<Pet>(`/pets/${id}`, formData, {
       headers: {

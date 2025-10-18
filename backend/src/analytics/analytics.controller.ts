@@ -31,7 +31,7 @@ export class AnalyticsController {
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.analyticsService.getUserPredictionHistory(req.user.sub, pageNum, limitNum);
+    return this.analyticsService.getUserPredictionHistory(req.user.id, pageNum, limitNum);
   }
 
   @Get('predictions/trends')

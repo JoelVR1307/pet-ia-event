@@ -30,6 +30,21 @@ const EVENT_TYPE_LABELS = {
   OTHER: '📌 Otro',
 };
 
+// Etiquetas amigables para nuevos atributos
+const SPECIES_LABELS: Record<NonNullable<Pet['species']>, string> = {
+  DOG: 'Perro',
+  CAT: 'Gato',
+  BIRD: 'Ave',
+  RABBIT: 'Conejo',
+  OTHER: 'Otro',
+};
+
+const GENDER_LABELS: Record<NonNullable<Pet['gender']>, string> = {
+  MALE: 'Macho',
+  FEMALE: 'Hembra',
+  UNKNOWN: 'Desconocido',
+};
+
 export const PetDetailView = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
@@ -187,6 +202,34 @@ export const PetDetailView = () => {
                   <p className="text-lg font-semibold">
                     {new Date(pet.createdAt).toLocaleDateString()}
                   </p>
+                </div>
+                {pet.species && (
+                  <div>
+                    <p className="text-sm text-gray-600">Especie</p>
+                    <p className="text-lg font-semibold">{SPECIES_LABELS[pet.species]}</p>
+                  </div>
+                )}
+                {pet.gender && (
+                  <div>
+                    <p className="text-sm text-gray-600">Género</p>
+                    <p className="text-lg font-semibold">{GENDER_LABELS[pet.gender]}</p>
+                  </div>
+                )}
+                {typeof pet.weight === 'number' && (
+                  <div>
+                    <p className="text-sm text-gray-600">Peso</p>
+                    <p className="text-lg font-semibold">{pet.weight} kg</p>
+                  </div>
+                )}
+                {pet.color && (
+                  <div>
+                    <p className="text-sm text-gray-600">Color</p>
+                    <p className="text-lg font-semibold">{pet.color}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-600">Estado</p>
+                  <p className="text-lg font-semibold">{pet.isActive ? 'Activa' : 'Inactiva'}</p>
                 </div>
               </div>
             </div>

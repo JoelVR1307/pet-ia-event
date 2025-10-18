@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CreatePostDto } from '../../types/social.types';
-import { Pet } from '../../types/pet.types';
+import type { CreatePostDto } from '../../types/social.types';
+import type { Pet } from '../../types/pet.types';
 import { socialService } from '../../services/social.service';
 import { petService } from '../../services/pet.service';
+import { FileUpload } from '../FileUpload';
+import { validateImageFile, createImagePreview } from '../../utils/fileValidation';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -15,12 +17,15 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   onClose,
   onPostCreated
 }) => {
+  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedPetId, setSelectedPetId] = useState<string>('');
-  const [imageUrl, setImageUrl] = useState('');
   const [pets, setPets] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPets, setIsLoadingPets] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imageError, setImageError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -31,8 +36,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const loadUserPets = async () => {
     setIsLoadingPets(true);
     try {
-      const response = await petService.getUserPets();
-      setPets(response.pets || []);
+      // Use getPets() to fetch the current user's pets
+      const response = await petService.getPets();
+      setPets(response || []);
     } catch (error) {
       console.error('Error loading pets:', error);
     } finally {
@@ -40,9 +46,31 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
   };
 
+  const onFileSelect = async (file: File) => {
+    setImageError('');
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      setImageError(validation.error || 'Archivo inválido');
+      setImageFile(null);
+      setImagePreview('');
+      return;
+    }
+    setImageFile(file);
+    try {
+      const preview = await createImagePreview(file);
+      setImagePreview(preview);
+    } catch (e) {
+      setImagePreview('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!title.trim()) {
+      alert('El título del post es requerido');
+      return;
+    }
     if (!content.trim()) {
       alert('El contenido del post es requerido');
       return;
@@ -50,14 +78,25 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
     setIsLoading(true);
     try {
-      const postData: CreatePostDto = {
-        content: content.trim(),
-        imageUrl: imageUrl.trim() || undefined,
-        petId: selectedPetId || undefined
-      };
+      // Prefer multipart when an image is selected
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('title', title.trim());
+        formData.append('content', content.trim());
+        if (selectedPetId) formData.append('petId', String(Number(selectedPetId)));
+        formData.append('image', imageFile);
 
-      const newPost = await socialService.createPost(postData);
-      onPostCreated(newPost);
+        const newPost = await socialService.createPostWithImage(formData);
+        onPostCreated(newPost);
+      } else {
+        const postData: CreatePostDto = {
+          title: title.trim(),
+          content: content.trim(),
+          petId: selectedPetId ? String(Number(selectedPetId)) : undefined,
+        };
+        const newPost = await socialService.createPost(postData);
+        onPostCreated(newPost);
+      }
       handleClose();
     } catch (error) {
       console.error('Error creating post:', error);
@@ -68,16 +107,19 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   };
 
   const handleClose = () => {
+    setTitle('');
     setContent('');
     setSelectedPetId('');
-    setImageUrl('');
+    setImageFile(null);
+    setImagePreview('');
+    setImageError('');
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -94,6 +136,22 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Título */}
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              Título
+            </label>
+            <input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: Paseo en el parque"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
           {/* Contenido del post */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
@@ -126,7 +184,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               >
                 <option value="">Selecciona una mascota</option>
                 {pets.map((pet) => (
-                  <option key={pet.id} value={pet.id}>
+                  <option key={pet.id} value={String(pet.id)}>
                     {pet.name} - {pet.species} {pet.breed && `(${pet.breed})`}
                   </option>
                 ))}
@@ -134,47 +192,30 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             )}
           </div>
 
-          {/* URL de imagen */}
+          {/* Imagen */}
           <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
-              URL de imagen (opcional)
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Imagen (opcional)
             </label>
-            <input
-              type="url"
-              id="imageUrl"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://ejemplo.com/imagen.jpg"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <FileUpload onFileSelect={onFileSelect} previewUrl={imagePreview} fileName={imageFile?.name} />
+            {imageError && (
+              <p className="text-sm text-red-600 mt-2">{imageError}</p>
+            )}
           </div>
-
-          {/* Preview de imagen */}
-          {imageUrl && (
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Vista previa:</p>
-              <img
-                src={imageUrl}
-                alt="Preview"
-                className="w-full max-h-48 object-cover rounded-lg"
-                onError={() => setImageUrl('')}
-              />
-            </div>
-          )}
 
           {/* Botones */}
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={isLoading || !content.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={isLoading || !content.trim() || !title.trim()}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               {isLoading ? 'Publicando...' : 'Publicar'}
             </button>

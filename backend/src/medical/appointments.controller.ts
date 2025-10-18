@@ -14,7 +14,7 @@ export class AppointmentsController {
 
   @Post()
   create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req) {
-    return this.appointmentsService.create(createAppointmentDto, req.user.sub);
+    return this.appointmentsService.create(createAppointmentDto, req.user.id);
   }
 
   @Get()
@@ -30,7 +30,7 @@ export class AppointmentsController {
   findMyAppointments(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.appointmentsService.findByUser(req.user.sub, pageNum, limitNum);
+    return this.appointmentsService.findByUser(req.user.id, pageNum, limitNum);
   }
 
   @Get('veterinarian/:veterinarianId')
@@ -48,7 +48,7 @@ export class AppointmentsController {
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.appointmentsService.findOne(id, req.user.sub, req.user.role);
+    return this.appointmentsService.findOne(id, req.user.id, req.user.role);
   }
 
   @Patch(':id/status')
@@ -59,11 +59,11 @@ export class AppointmentsController {
     @Body() updateStatusDto: UpdateAppointmentStatusDto,
     @Request() req,
   ) {
-    return this.appointmentsService.updateStatus(id, updateStatusDto, req.user.sub, req.user.role);
+    return this.appointmentsService.updateStatus(id, updateStatusDto, req.user.id, req.user.role);
   }
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.appointmentsService.remove(id, req.user.sub, req.user.role);
+    return this.appointmentsService.remove(id, req.user.id, req.user.role);
   }
 }

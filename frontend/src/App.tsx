@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -14,6 +14,8 @@ import GamificationDashboardView from './views/GamificationDashboardView';
 import SearchView from './views/SearchView';
 import { SocialFeedView } from './views/SocialFeedView';
 import MedicalView from './views/MedicalView';
+import AdminDashboardView from './views/AdminDashboardView';
+import AdminRoute from './components/auth/AdminRoute';
 
 function App() {
   return (
@@ -71,6 +73,14 @@ function App() {
             <Route path="/medical" element={
               <ProtectedRoute>
                 <MedicalView />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminDashboardView />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             
