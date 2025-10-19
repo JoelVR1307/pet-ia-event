@@ -25,6 +25,8 @@ export class LikesService {
       },
     });
 
+    let liked: boolean;
+
     if (existingLike) {
       // Si existe, eliminarlo (unlike)
       await this.prisma.like.delete({
@@ -32,11 +34,7 @@ export class LikesService {
           id: existingLike.id,
         },
       });
-
-      return {
-        action: 'unliked',
-        message: 'Like eliminado',
-      };
+      liked = false;
     } else {
       // Si no existe, crearlo (like)
       await this.prisma.like.create({
@@ -45,12 +43,18 @@ export class LikesService {
           postId,
         },
       });
-
-      return {
-        action: 'liked',
-        message: 'Like agregado',
-      };
+      liked = true;
     }
+
+    // Obtener el contador actualizado de likes
+    const likesCount = await this.prisma.like.count({
+      where: { postId },
+    });
+
+    return {
+      liked,
+      likesCount,
+    };
   }
 
   async getLikesByPost(postId: number) {

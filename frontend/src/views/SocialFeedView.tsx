@@ -4,7 +4,7 @@ import { socialService } from '../services/social.service';
 import { PostCard } from '../components/social/PostCard';
 import { CreatePostModal } from '../components/social/CreatePostModal';
 import { CommentSection } from '../components/social/CommentSection';
-import { useNavigate } from 'react-router-dom';
+import { Header } from '../components/layout/Header';
 
 export const SocialFeedView: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -14,7 +14,6 @@ export const SocialFeedView: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     loadPosts();
@@ -82,20 +81,13 @@ export const SocialFeedView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-700 hover:text-gray-900 inline-flex items-center gap-2 cursor-pointer"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>Volver</span>
-              </button>
+              
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Pet Social</h1>
                 <p className="text-gray-600 mt-1">Comparte momentos especiales con tu mascota</p>

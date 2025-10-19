@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Post } from '../../types/social.types';
+import type { Post } from '../../types/social.types';
 import { socialService } from '../../services/social.service';
 import moment from 'moment';
 
@@ -39,6 +39,85 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const handleShare = async () => {
+    const postUrl = `${window.location.origin}/post/${localPost.id}`;
+    const shareText = `¡Mira este post de ${localPost.author.username}!\n\n${localPost.content.substring(0, 100)}${localPost.content.length > 100 ? '...' : ''}`;
+
+    // Verificar si el navegador soporta Web Share API
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post de ${localPost.author.username}`,
+          text: shareText,
+          url: postUrl,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+        // Fallback a copiar al portapapeles
+        fallbackShare(postUrl, shareText);
+      }
+    } else {
+      // Fallback para navegadores que no soportan Web Share API
+      fallbackShare(postUrl, shareText);
+    }
+  };
+
+  const fallbackShare = (url: string, text: string) => {
+    // Crear un menú de opciones de compartir
+    const shareOptions = [
+      {
+        name: 'Copiar enlace',
+        action: () => {
+          navigator.clipboard.writeText(url).then(() => {
+            alert('¡Enlace copiado al portapapeles!');
+          }).catch(() => {
+            // Fallback para navegadores más antiguos
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('¡Enlace copiado al portapapeles!');
+          });
+        }
+      },
+      {
+        name: 'WhatsApp',
+        action: () => {
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`;
+          window.open(whatsappUrl, '_blank');
+        }
+      },
+      {
+        name: 'Facebook',
+        action: () => {
+          const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+          window.open(facebookUrl, '_blank');
+        }
+      },
+      {
+        name: 'Twitter',
+        action: () => {
+          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+          window.open(twitterUrl, '_blank');
+        }
+      }
+    ];
+
+    // Mostrar opciones de compartir
+    const option = prompt(
+      'Selecciona una opción de compartir:\n' +
+      shareOptions.map((opt, index) => `${index + 1}. ${opt.name}`).join('\n') +
+      '\n\nIngresa el número de la opción:'
+    );
+
+    const selectedIndex = parseInt(option || '0') - 1;
+    if (selectedIndex >= 0 && selectedIndex < shareOptions.length) {
+      shareOptions[selectedIndex].action();
+    }
+  };
+
   const handleDelete = async () => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este post?')) {
       try {
@@ -49,6 +128,8 @@ export const PostCard: React.FC<PostCardProps> = ({
       }
     }
   };
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4">
@@ -101,7 +182,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {localPost.imageUrl && (
         <div className="mb-4">
           <img 
-            src={localPost.imageUrl} 
+            src={`${backendUrl}${localPost.imageUrl}`} 
             alt="Post image" 
             className="w-full max-h-96 object-cover rounded-lg"
           />
@@ -141,7 +222,10 @@ export const PostCard: React.FC<PostCardProps> = ({
           <span>Comentar</span>
         </button>
 
-        <button className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+        <button 
+          onClick={() => handleShare()}
+          className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
           </svg>

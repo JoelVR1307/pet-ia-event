@@ -32,6 +32,8 @@ export const RecentActivity: React.FC = () => {
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   };
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6 border-b border-gray-200">
@@ -75,7 +77,7 @@ export const RecentActivity: React.FC = () => {
                   {post.imageUrl && (
                     <div className="mt-2">
                       <img
-                        src={post.imageUrl}
+                        src={`${backendUrl}${post.imageUrl}`}
                         alt="Post"
                         className="w-full h-20 object-cover rounded-lg"
                       />

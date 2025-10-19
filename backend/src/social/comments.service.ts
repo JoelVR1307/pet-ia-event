@@ -18,7 +18,7 @@ export class CommentsService {
       throw new NotFoundException('Post no encontrado');
     }
 
-    return this.prisma.comment.create({
+    const comment = await this.prisma.comment.create({
       data: {
         content,
         userId,
@@ -34,10 +34,27 @@ export class CommentsService {
         },
       },
     });
+
+    // Transformar la respuesta para que coincida con el tipo Comment del frontend
+    return {
+      id: comment.id.toString(),
+      content: comment.content,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      author: {
+        id: comment.user.id.toString(),
+        username: comment.user.name,
+        email: '', // No disponible en este contexto
+        profileImage: comment.user.avatar || '',
+      },
+      postId: comment.postId.toString(),
+      parentId: null, // No soportado en el modelo actual
+      replies: [],
+    };
   }
 
   async findByPost(postId: number) {
-    return this.prisma.comment.findMany({
+    const comments = await this.prisma.comment.findMany({
       where: { postId },
       include: {
         user: {
@@ -52,6 +69,23 @@ export class CommentsService {
         createdAt: 'asc',
       },
     });
+
+    // Transformar los comentarios para que coincidan con el tipo Comment del frontend
+    return comments.map(comment => ({
+      id: comment.id.toString(),
+      content: comment.content,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      author: {
+        id: comment.user.id.toString(),
+        username: comment.user.name,
+        email: '', // No disponible en este contexto
+        profileImage: comment.user.avatar || '',
+      },
+      postId: comment.postId.toString(),
+      parentId: null, // No soportado en el modelo actual
+      replies: [],
+    }));
   }
 
   async remove(id: number, userId: number) {

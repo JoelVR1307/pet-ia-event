@@ -25,7 +25,7 @@ export class PostsService {
       }
     }
 
-    return this.prisma.post.create({
+    const post = await this.prisma.post.create({
       data: {
         title,
         content,
@@ -38,6 +38,7 @@ export class PostsService {
           select: {
             id: true,
             name: true,
+            email: true,
             avatar: true,
           },
         },
@@ -58,6 +59,26 @@ export class PostsService {
         },
       },
     });
+
+    // Transformar la respuesta para que coincida con el frontend
+    return {
+      ...post,
+      author: {
+        id: post.user.id.toString(),
+        username: post.user.name,
+        email: post.user.email,
+        profileImage: post.user.avatar,
+      },
+      authorId: post.userId.toString(),
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
+      isLiked: false,
+      pet: post.pet ? {
+        ...post.pet,
+        id: post.pet.id.toString(),
+        imageUrl: post.pet.photoUrl,
+      } : undefined,
+    };
   }
 
   async findAll(page: number = 1, limit: number = 10) {
@@ -75,6 +96,7 @@ export class PostsService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
             },
           },
@@ -98,8 +120,28 @@ export class PostsService {
       this.prisma.post.count(),
     ]);
 
+    // Transformar los posts para que coincidan con el frontend
+    const transformedPosts = posts.map(post => ({
+      ...post,
+      author: {
+        id: post.user.id.toString(),
+        username: post.user.name,
+        email: post.user.email,
+        profileImage: post.user.avatar,
+      },
+      authorId: post.userId.toString(),
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
+      isLiked: false,
+      pet: post.pet ? {
+        ...post.pet,
+        id: post.pet.id.toString(),
+        imageUrl: post.pet.photoUrl,
+      } : undefined,
+    }));
+
     return {
-      posts,
+      posts: transformedPosts,
       pagination: {
         page,
         limit,
@@ -117,6 +159,7 @@ export class PostsService {
           select: {
             id: true,
             name: true,
+            email: true,
             avatar: true,
           },
         },
@@ -135,6 +178,7 @@ export class PostsService {
               select: {
                 id: true,
                 name: true,
+                email: true,
                 avatar: true,
               },
             },
@@ -166,7 +210,34 @@ export class PostsService {
       throw new NotFoundException('Post no encontrado');
     }
 
-    return post;
+    // Transformar el post para que coincida con el frontend
+    return {
+      ...post,
+      author: {
+        id: post.user.id.toString(),
+        username: post.user.name,
+        email: post.user.email,
+        profileImage: post.user.avatar,
+      },
+      authorId: post.userId.toString(),
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
+      isLiked: false,
+      pet: post.pet ? {
+        ...post.pet,
+        id: post.pet.id.toString(),
+        imageUrl: post.pet.photoUrl,
+      } : undefined,
+      comments: post.comments.map(comment => ({
+        ...comment,
+        author: {
+          id: comment.user.id.toString(),
+          username: comment.user.name,
+          email: comment.user.email,
+          profileImage: comment.user.avatar,
+        },
+      })),
+    };
   }
 
   async findByUser(userId: number, page: number = 1, limit: number = 10) {
@@ -185,6 +256,7 @@ export class PostsService {
             select: {
               id: true,
               name: true,
+              email: true,
               avatar: true,
             },
           },
@@ -208,8 +280,28 @@ export class PostsService {
       this.prisma.post.count({ where: { userId } }),
     ]);
 
+    // Transformar los posts para que coincidan con el frontend
+    const transformedPosts = posts.map(post => ({
+      ...post,
+      author: {
+        id: post.user.id.toString(),
+        username: post.user.name,
+        email: post.user.email,
+        profileImage: post.user.avatar,
+      },
+      authorId: post.userId.toString(),
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
+      isLiked: false,
+      pet: post.pet ? {
+        ...post.pet,
+        id: post.pet.id.toString(),
+        imageUrl: post.pet.photoUrl,
+      } : undefined,
+    }));
+
     return {
-      posts,
+      posts: transformedPosts,
       pagination: {
         page,
         limit,

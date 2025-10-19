@@ -14,6 +14,7 @@ class SocialService {
   // Posts
   async getPosts(page: number = 1, limit: number = 10): Promise<PostsResponse> {
     const response = await apiService.get(`/posts?page=${page}&limit=${limit}`);
+    // console.log(response.data);
     return response.data;
   }
 
@@ -57,7 +58,7 @@ class SocialService {
   }
 
   async createComment(commentData: CreateCommentDto): Promise<Comment> {
-    const response = await apiService.post('/comments', commentData);
+    const response = await apiService.post(`/comments/post/${commentData.postId}`, commentData);
     return response.data;
   }
 

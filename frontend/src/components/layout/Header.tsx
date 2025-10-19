@@ -15,9 +15,9 @@ export const Header: React.FC = () => {
 
   const navigation = [
     
-    
-    { name: 'Búsqueda', href: '/search', icon: '🔍' },
-    { name: 'Social', href: '/social', icon: '👥' },
+    { name: 'Home', href: '/dashboard', icon: '🏠' },
+    // { name: 'Búsqueda', href: '/search', icon: '🔍' },
+    // { name: 'Social', href: '/social', icon: '👥' },
     { name: 'Médico', href: '/medical', icon: '🏥' },
     { name: 'Gamificación', href: '/gamification', icon: '🎮' },
     { name: 'Notificaciones', href: '/notifications', icon: '🔔' },
