@@ -24,6 +24,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
 }) => {
   const [isLiking, setIsLiking] = useState(false);
   const [localComment, setLocalComment] = useState(comment);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -46,84 +48,155 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
-      try {
-        await socialService.deleteComment(localComment.id);
-        onCommentDelete(localComment.id);
-      } catch (error) {
-        console.error('Error deleting comment:', error);
-      }
+    setIsDeleting(true);
+    try {
+      await socialService.deleteComment(localComment.id);
+      onCommentDelete(localComment.id);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="border-l-2 border-gray-100 pl-4 ml-2">
-      <div className="bg-gray-50 rounded-lg p-3 mb-2">
-        {/* Header del comentario */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-              {localComment.author.username.charAt(0).toUpperCase()}
+    <>
+      <div className="border-l-2 border-gray-100 pl-4 ml-2">
+        <div className="bg-gray-50 rounded-lg p-3 mb-2">
+          {/* Header del comentario */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                {comment.user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <span className="text-sm font-medium text-gray-900">{comment.user?.name || 'Usuario'}</span>
+              <span className="text-xs text-gray-500">{moment(comment.createdAt).fromNow()}</span>
             </div>
-            <span className="text-sm font-medium text-gray-900">{localComment.author.username}</span>
-            <span className="text-xs text-gray-500">{moment(localComment.createdAt).fromNow()}</span>
+            
+            <button 
+              onClick={() => setShowDeleteModal(true)}
+              className="text-gray-400 hover:text-red-500 transition-colors"
+              title="Eliminar comentario"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           </div>
-          
-          <button 
-            onClick={handleDelete}
-            className="text-gray-400 hover:text-red-500 transition-colors"
-            title="Eliminar comentario"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+
+          {/* Contenido del comentario */}
+          <p className="text-sm text-gray-800 mb-2">{comment.content}</p>
+
+          {/* Acciones del comentario */}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleLike}
+              disabled={isLiking}
+              className={`flex items-center space-x-1 text-xs transition-colors ${
+                comment.isLiked 
+                  ? 'text-red-500' 
+                  : 'text-gray-500 hover:text-red-500'
+              } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <svg className="w-4 h-4" fill={comment.isLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span>{comment.likesCount || 0}</span>
+            </button>
+
+            <button
+              onClick={() => onReply(comment.id)}
+              className="text-xs text-gray-500 hover:text-blue-500 transition-colors"
+            >
+              Responder
+            </button>
+          </div>
         </div>
 
-        {/* Contenido del comentario */}
-        <p className="text-sm text-gray-800 mb-2">{localComment.content}</p>
-
-        {/* Acciones del comentario */}
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`flex items-center space-x-1 text-xs transition-colors ${
-              localComment.isLiked 
-                ? 'text-red-500' 
-                : 'text-gray-500 hover:text-red-500'
-            } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <svg className="w-4 h-4" fill={localComment.isLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-            <span>{localComment.likesCount}</span>
-          </button>
-
-          <button
-            onClick={() => onReply(localComment.id)}
-            className="text-xs text-gray-500 hover:text-blue-500 transition-colors"
-          >
-            Responder
-          </button>
-        </div>
+        {/* Respuestas anidadas */}
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="ml-4 space-y-2">
+            {comment.replies.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                onReply={onReply}
+                onCommentUpdate={onCommentUpdate}
+                onCommentDelete={onCommentDelete}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Respuestas anidadas */}
-      {localComment.replies && localComment.replies.length > 0 && (
-        <div className="ml-4 space-y-2">
-          {localComment.replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              onReply={onReply}
-              onCommentUpdate={onCommentUpdate}
-              onCommentDelete={onCommentDelete}
-            />
-          ))}
+      {/* Modal de confirmación de eliminación */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            {/* Header del modal */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Eliminar Comentario</h3>
+                  <p className="text-sm text-gray-500 mt-1">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <p className="text-sm text-gray-600">
+                ¿Estás seguro de que deseas eliminar este comentario? 
+                {comment.replies && comment.replies.length > 0 && (
+                  <span className="block mt-2 font-medium text-gray-700">
+                    También se eliminarán {comment.replies.length} respuesta(s) asociada(s).
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="p-6 bg-gray-50 rounded-b-lg flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Eliminar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -134,7 +207,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -148,9 +221,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     setIsLoading(true);
     try {
       const response = await socialService.getPostComments(postId);
-      setComments(response.comments || []);
+      setComments(response.comments || response || []);
     } catch (error) {
       console.error('Error loading comments:', error);
+      setComments([]);
     } finally {
       setIsLoading(false);
     }
@@ -161,69 +235,77 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     
     if (!newComment.trim()) return;
 
-    setIsSubmitting(true);
     try {
-      const commentData: CreateCommentDto = {
-        content: newComment.trim(),
-        postId,
-        parentId: replyingTo || undefined
-      };
-
-      const createdComment = await socialService.createComment(commentData);
+      setIsSubmitting(true);
       
-      if (replyingTo) {
-        // Agregar respuesta al comentario padre
-        setComments(prevComments => 
-          prevComments.map(comment => 
-            comment.id === replyingTo 
-              ? { ...comment, replies: [...(comment.replies || []), createdComment] }
-              : comment
-          )
-        );
-      } else {
-        // Agregar nuevo comentario principal
-        setComments(prevComments => [createdComment, ...prevComments]);
-      }
-
+      // Asegurarse de que postId es un número
+      const postIdNumber = typeof postId === 'string' ? parseInt(postId, 10) : postId;
+      
+      // Convertir parentId a número si existe
+      const parentId = replyingTo ? parseInt(replyingTo.id, 10) : undefined;
+      
+      await socialService.createComment(postIdNumber, newComment, parentId);
+      await loadComments();
+      
       setNewComment('');
       setReplyingTo(null);
     } catch (error) {
       console.error('Error creating comment:', error);
-      alert('Error al crear el comentario. Por favor intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCommentUpdate = (updatedComment: Comment) => {
-    setComments(prevComments =>
-      prevComments.map(comment =>
-        comment.id === updatedComment.id ? updatedComment : comment
-      )
-    );
+    const updateCommentRecursively = (comments: Comment[]): Comment[] => {
+      return comments.map(comment => {
+        if (comment.id === updatedComment.id) {
+          return updatedComment;
+        }
+        if (comment.replies && comment.replies.length > 0) {
+          return {
+            ...comment,
+            replies: updateCommentRecursively(comment.replies)
+          };
+        }
+        return comment;
+      });
+    };
+
+    setComments(prevComments => updateCommentRecursively(prevComments));
   };
 
   const handleCommentDelete = (commentId: string) => {
-    setComments(prevComments =>
-      prevComments.filter(comment => comment.id !== commentId)
-    );
+    const deleteCommentRecursively = (comments: Comment[]): Comment[] => {
+      return comments
+        .filter(comment => comment.id !== commentId)
+        .map(comment => ({
+          ...comment,
+          replies: comment.replies ? deleteCommentRecursively(comment.replies) : []
+        }));
+    };
+
+    setComments(prevComments => deleteCommentRecursively(prevComments));
   };
 
-  const handleReply = (parentId: string) => {
-    setReplyingTo(parentId);
+  const handleReply = (comment: Comment) => {
+    setReplyingTo({ 
+      id: comment.id, 
+      username: comment.user?.name || 'Usuario' 
+    });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  bg-black/60 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Comentarios</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -236,7 +318,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           <form onSubmit={handleSubmitComment} className="space-y-3">
             {replyingTo && (
               <div className="flex items-center justify-between bg-blue-50 p-2 rounded">
-                <span className="text-sm text-blue-700">Respondiendo a un comentario</span>
+                <span className="text-sm text-blue-700">
+                  Respondiendo a <span className="font-semibold">{replyingTo.username}</span>
+                </span>
                 <button
                   type="button"
                   onClick={() => setReplyingTo(null)}
@@ -280,7 +364,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                 <CommentItem
                   key={comment.id}
                   comment={comment}
-                  onReply={handleReply}
+                  onReply={() => handleReply(comment)}
                   onCommentUpdate={handleCommentUpdate}
                   onCommentDelete={handleCommentDelete}
                 />

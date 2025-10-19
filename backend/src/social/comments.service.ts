@@ -1,13 +1,23 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CommentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: number, postId: number, createCommentDto: CreateCommentDto) {
-    const { content } = createCommentDto;
+  async create(
+    userId: number,
+    postId: number,
+    createCommentDto: CreateCommentDto,
+  ) {
+    const { content, parentId } = createCommentDto;
 
     // Verificar que el post existe
     const post = await this.prisma.post.findUnique({
@@ -18,18 +28,49 @@ export class CommentsService {
       throw new NotFoundException('Post no encontrado');
     }
 
+    // Si es una respuesta, verificar que el comentario padre existe
+    if (parentId) {
+      const parentComment = await this.prisma.comment.findUnique({
+        where: { id: parentId },
+      });
+
+      if (!parentComment) {
+        throw new NotFoundException('Comentario padre no encontrado');
+      }
+
+      // Verificar que el comentario padre pertenece al mismo post
+      if (parentComment.postId !== postId) {
+        throw new BadRequestException(
+          'El comentario padre no pertenece a este post',
+        );
+      }
+    }
+
+    // Crear el comentario
     const comment = await this.prisma.comment.create({
       data: {
         content,
         userId,
         postId,
-      },
+        parentId,
+      } as Prisma.CommentUncheckedCreateInput,
       include: {
         user: {
           select: {
             id: true,
             name: true,
             avatar: true,
+          },
+        },
+        replies: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
           },
         },
       },
@@ -64,14 +105,28 @@ export class CommentsService {
             avatar: true,
           },
         },
+        replies: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
     });
 
     // Transformar los comentarios para que coincidan con el tipo Comment del frontend
-    return comments.map(comment => ({
+    return comments.map((comment) => ({
       id: comment.id.toString(),
       content: comment.content,
       createdAt: comment.createdAt,
@@ -98,11 +153,15 @@ export class CommentsService {
     }
 
     if (comment.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para eliminar este comentario');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este comentario',
+      );
     }
 
-    return this.prisma.comment.delete({
+    await this.prisma.comment.delete({
       where: { id },
     });
+
+    return { message: 'Comentario eliminado correctamente' };
   }
 }

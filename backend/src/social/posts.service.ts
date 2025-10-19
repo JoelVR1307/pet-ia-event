@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 
@@ -6,7 +10,11 @@ import { CreatePostDto } from './dto/create-post.dto';
 export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: number, createPostDto: CreatePostDto, file?: Express.Multer.File) {
+  async create(
+    userId: number,
+    createPostDto: CreatePostDto,
+    file?: Express.Multer.File,
+  ) {
     const { title, content, imageUrl, petId } = createPostDto;
     // Si viene archivo, sobreescribe imageUrl con la ruta almacenada
     const storedImageUrl = file ? `/uploads/posts/${file.filename}` : imageUrl;
@@ -21,7 +29,9 @@ export class PostsService {
       });
 
       if (!pet) {
-        throw new ForbiddenException('No tienes permiso para asociar esta mascota al post');
+        throw new ForbiddenException(
+          'No tienes permiso para asociar esta mascota al post',
+        );
       }
     }
 
@@ -81,7 +91,7 @@ export class PostsService {
     };
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(page: number = 1, limit: number = 10, currentUserId?: number) {
     const skip = (page - 1) * limit;
 
     const [posts, total] = await Promise.all([
@@ -109,6 +119,11 @@ export class PostsService {
               photoUrl: true,
             },
           },
+          likes: currentUserId ? {
+            where: {
+              userId: currentUserId,
+            },
+          } : false,
           _count: {
             select: {
               comments: true,
@@ -132,7 +147,7 @@ export class PostsService {
       authorId: post.userId.toString(),
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
-      isLiked: false,
+      isLiked: currentUserId ? post.likes.length > 0 : false,
       pet: post.pet ? {
         ...post.pet,
         id: post.pet.id.toString(),
@@ -151,7 +166,7 @@ export class PostsService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, currentUserId?: number) {
     const post = await this.prisma.post.findUnique({
       where: { id },
       include: {
@@ -187,7 +202,11 @@ export class PostsService {
             createdAt: 'asc',
           },
         },
-        likes: {
+        likes: currentUserId ? {
+          where: {
+            userId: currentUserId,
+          },
+        } : {
           include: {
             user: {
               select: {
@@ -222,7 +241,7 @@ export class PostsService {
       authorId: post.userId.toString(),
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
-      isLiked: false,
+      isLiked: currentUserId ? post.likes.length > 0 : false,
       pet: post.pet ? {
         ...post.pet,
         id: post.pet.id.toString(),
@@ -240,7 +259,7 @@ export class PostsService {
     };
   }
 
-  async findByUser(userId: number, page: number = 1, limit: number = 10) {
+  async findByUser(userId: number, page: number = 1, limit: number = 10, currentUserId?: number) {
     const skip = (page - 1) * limit;
 
     const [posts, total] = await Promise.all([
@@ -269,6 +288,11 @@ export class PostsService {
               photoUrl: true,
             },
           },
+          likes: currentUserId ? {
+            where: {
+              userId: currentUserId,
+            },
+          } : false,
           _count: {
             select: {
               comments: true,
@@ -292,7 +316,7 @@ export class PostsService {
       authorId: post.userId.toString(),
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
-      isLiked: false,
+      isLiked: currentUserId ? post.likes.length > 0 : false,
       pet: post.pet ? {
         ...post.pet,
         id: post.pet.id.toString(),
@@ -327,5 +351,68 @@ export class PostsService {
     return this.prisma.post.delete({
       where: { id },
     });
+  }
+
+  async getPosts(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true,
+            },
+          },
+          pet: {
+            select: {
+              id: true,
+              name: true,
+              species: true,
+            },
+          },
+          likes: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          comments: {
+            select: {
+              id: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+            },
+          },
+        },
+      }),
+      this.prisma.post.count(),
+    ]);
+
+    return {
+      posts: posts.map(post => ({
+        ...post,
+        likesCount: post._count.likes,
+        commentsCount: post._count.comments,
+      })),
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total,
+    };
   }
 }

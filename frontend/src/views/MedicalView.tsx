@@ -6,6 +6,7 @@ import { petService } from '../services/pet.service';
 import AppointmentCard from '../components/medical/AppointmentCard';
 import CreateAppointmentModal from '../components/medical/CreateAppointmentModal';
 import MedicalRecordCard from '../components/medical/MedicalRecordCard';
+import { Header } from '../components/layout/Header';
 
 const MedicalView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'appointments' | 'records' | 'vaccinations'>('appointments');
@@ -116,6 +117,7 @@ const MedicalView: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Header />
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Centro Médico</h1>

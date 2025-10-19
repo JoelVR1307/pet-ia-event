@@ -57,8 +57,12 @@ class SocialService {
     return response.data;
   }
 
-  async createComment(commentData: CreateCommentDto): Promise<Comment> {
-    const response = await apiService.post(`/comments/post/${commentData.postId}`, commentData);
+
+  async createComment(postId: string | number, content: string, parentId?: number) {
+    const response = await apiService.post(`/comments/post/${postId}`, {
+      content,
+      parentId,
+    });
     return response.data;
   }
 
@@ -67,8 +71,9 @@ class SocialService {
     return response.data;
   }
 
-  async deleteComment(id: string): Promise<void> {
-    await apiService.delete(`/comments/${id}`);
+  async deleteComment(id: string | number): Promise<void> {
+    const response = await apiService.delete(`/comments/${id}`);
+    return response.data;
   }
 
   // Likes

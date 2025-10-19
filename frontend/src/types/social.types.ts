@@ -1,25 +1,37 @@
+export interface Like {
+  id: number;
+  userId: number;
+  postId: number;
+  user: {
+    id: number;
+    name: string;
+    avatar?: string;
+  };
+  createdAt: string;
+}
+
 export interface Post {
-  id: string;
+  id: number;
+  title: string;
   content: string;
   imageUrl?: string;
-  authorId: string;
-  author: {
-    id: string;
-    username: string;
+  userId: number;
+  petId?: number;
+  user: {
+    id: number;
+    name: string;
     email: string;
-    profileImage?: string;
+    avatar?: string;
   };
-  petId?: string;
   pet?: {
-    id: string;
+    id: number;
     name: string;
     species: string;
-    breed?: string;
-    imageUrl?: string;
   };
+  likes: Like[]; // ✅ Ahora incluye información del usuario
+  comments?: Comment[];
   likesCount: number;
   commentsCount: number;
-  isLiked: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,14 +53,6 @@ export interface Comment {
   isLiked: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Like {
-  id: string;
-  userId: string;
-  postId?: string;
-  commentId?: string;
-  createdAt: string;
 }
 
 export interface CreatePostDto {

@@ -1,7 +1,11 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, IsOptional } from 'class-validator';
 
 export class CreateCommentDto {
-  @IsString({ message: 'El contenido debe ser una cadena de texto' })
-  @IsNotEmpty({ message: 'El contenido es requerido' })
+  @IsString()
+  @IsNotEmpty()
   content: string;
+
+  @IsInt()
+  @IsOptional()
+  parentId?: number;
 }

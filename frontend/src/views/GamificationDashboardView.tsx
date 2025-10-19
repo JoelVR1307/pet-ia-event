@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import type { 
-  Achievement, 
-  Reward, 
-  Challenge, 
-  UserPoints, 
-  LeaderboardEntry, 
+import { 
+  type Achievement, 
+  type Reward, 
+  type Challenge, 
+  type UserPoints, 
+  type LeaderboardEntry, 
   LeaderboardType, 
   LeaderboardPeriod,
   ChallengeType,
   RewardCategory,
-  UserChallenge,
-  UserReward
+  type UserChallenge,
+  type UserReward
 } from '../types/gamification.types';
 import { gamificationService } from '../services/gamification.service';
 import AchievementCard, { AchievementGrid, AchievementStats } from '../components/gamification/AchievementCard';
@@ -18,6 +18,7 @@ import RewardCard, { RewardGrid } from '../components/gamification/RewardCard';
 import ChallengeCard, { ChallengeGrid } from '../components/gamification/ChallengeCard';
 import LeaderboardTable from '../components/gamification/LeaderboardTable';
 import { LoadingSpinner, PageLoader } from '../components/common/LoadingSpinner';
+import { Header } from '../components/layout/Header';
 
 const GamificationDashboardView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'rewards' | 'challenges' | 'leaderboard'>('overview');
@@ -53,34 +54,28 @@ const GamificationDashboardView: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [
-        pointsData,
-        achievementsData,
-        userAchievementsData,
-        rewardsData,
-        userRewardsData,
-        challengesData,
-        userChallengesData
-      ] = await Promise.all([
-        gamificationService.getUserPoints(),
-        gamificationService.getAchievements({ limit: 20 }),
-        gamificationService.getUserAchievements(),
-        gamificationService.getRewards({ limit: 20 }),
-        gamificationService.getUserRewards(),
-        gamificationService.getChallenges({ limit: 20 }),
-        gamificationService.getUserChallenges()
-      ]);
-
-      setUserPoints(pointsData);
-      setAchievements(achievementsData.achievements);
-      setUserAchievements(userAchievementsData.achievements);
-      setRewards(rewardsData.rewards);
-      setUserRewards(userRewardsData.rewards);
-      setChallenges(challengesData.challenges);
-      setUserChallenges(userChallengesData.challenges);
+      // Temporalmente usar datos mock hasta implementar backend
+      console.warn('⚠️ Gamification module not implemented in backend yet');
+      
+      // Datos de ejemplo mientras se implementa
+      setUserPoints({
+        userId: 1,
+        totalPoints: 0,
+        level: 1,
+        experience: 0,
+        experienceToNextLevel: 100
+      });
+      
+      setAchievements([]);
+      setUserAchievements([]);
+      setRewards([]);
+      setUserRewards([]);
+      setChallenges([]);
+      setUserChallenges([]);
+      setLeaderboard([]);
 
     } catch (err) {
-      setError('Error al cargar los datos de gamificación');
+      setError('Módulo de gamificación en desarrollo');
       console.error('Error loading gamification data:', err);
     } finally {
       setLoading(false);
@@ -203,6 +198,8 @@ const GamificationDashboardView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

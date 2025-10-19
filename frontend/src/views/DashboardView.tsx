@@ -41,9 +41,51 @@ export const DashboardView: React.FC = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    loadPets();
-    loadDashboardStats();
+    loadInitialData();
   }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setIsLoading(true);
+      // Primero cargar mascotas
+      const petsData = await petService.getPets();
+      setPets(petsData);
+      
+      // Calcular estadísticas de mascotas
+      const total = petsData.length;
+      const averageAge = total > 0 
+        ? petsData.reduce((sum, pet) => sum + (pet.age || 0), 0) / total 
+        : 0;
+      
+      setStats({ total, averageAge });
+
+      // Ahora cargar estadísticas del dashboard con las mascotas cargadas
+      await loadDashboardStats(petsData.length);
+    } catch (error) {
+      console.error('Error loading pets:', error);
+      setError('Error al cargar las mascotas');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadDashboardStats = async (totalPets: number) => {
+    try {
+      const [appointments, posts] = await Promise.all([
+        medicalService.getMyAppointments().catch(() => []),
+        socialService.getPosts(1, 5).catch(() => ({ posts: [], totalPages: 0 }))
+      ]);
+
+      setDashboardStats({
+        totalPets: totalPets, // ✅ Usar el parámetro
+        upcomingAppointments: appointments.length,
+        recentPosts: posts.posts?.length || 0,
+        totalAchievements: 0
+      });
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    }
+  };
 
   const loadPets = async () => {
     try {
@@ -58,30 +100,14 @@ export const DashboardView: React.FC = () => {
         : 0;
       
       setStats({ total, averageAge });
+      
+      // Actualizar stats del dashboard
+      await loadDashboardStats(petsData.length);
     } catch (error) {
       console.error('Error loading pets:', error);
       setError('Error al cargar las mascotas');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadDashboardStats = async () => {
-    try {
-      // Cargar estadísticas del dashboard
-      const [appointments, posts] = await Promise.all([
-        medicalService.getMyAppointments().catch(() => []),
-        socialService.getPosts(1, 5).catch(() => ({ posts: [], totalPages: 0 }))
-      ]);
-
-      setDashboardStats({
-        totalPets: pets.length,
-        upcomingAppointments: appointments.length,
-        recentPosts: posts.posts?.length || 0,
-        totalAchievements: 0 // Implementar cuando esté disponible
-      });
-    } catch (error) {
-      console.error('Error loading dashboard stats:', error);
     }
   };
 
@@ -112,8 +138,7 @@ export const DashboardView: React.FC = () => {
 
     try {
       await petService.deletePet(petToDelete.id);
-      await loadPets();
-      await loadDashboardStats();
+      await loadPets(); // Ya actualiza todo correctamente
       setIsDeleteModalOpen(false);
       setPetToDelete(null);
     } catch (error) {
@@ -123,8 +148,7 @@ export const DashboardView: React.FC = () => {
   };
 
   const handleModalSuccess = () => {
-    loadPets();
-    loadDashboardStats();
+    loadPets(); // Ya actualiza todo correctamente
     setIsModalOpen(false);
     setSelectedPet(null);
   };

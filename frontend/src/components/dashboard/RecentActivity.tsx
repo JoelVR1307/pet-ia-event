@@ -33,7 +33,7 @@ export const RecentActivity: React.FC = () => {
   };
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-
+  
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6 border-b border-gray-200">
@@ -84,12 +84,39 @@ export const RecentActivity: React.FC = () => {
                     </div>
                   )}
                   <div className="flex items-center space-x-4 mt-2">
-                    <span className="text-xs text-gray-500 flex items-center">
-                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                      </svg>
-                      {post.likes || 0}
-                    </span>
+                    {/* Likes con avatares de usuarios */}
+                    <div className="flex items-center space-x-1">
+                      {post.likes && post.likes.length > 0 && (
+                        <div className="flex -space-x-2 mr-1">
+                          {post.likes
+                            .filter(like => like.user) // ✅ Filtrar likes sin usuario
+                            .slice(0, 3)
+                            .map((like) => (
+                              <div
+                                key={like.id}
+                                className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center border border-white"
+                                title={like.user?.name || 'Usuario'}
+                              >
+                                <span className="text-white text-[8px] font-medium">
+                                  {like.user?.name?.charAt(0) || '?'}
+                                </span>
+                              </div>
+                            ))}
+                          {post.likes.length > 3 && (
+                            <div className="w-4 h-4 rounded-full bg-gray-400 flex items-center justify-center border border-white">
+                              <span className="text-white text-[8px]">+{post.likes.length - 3}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <span className="text-xs text-gray-500 flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                        </svg>
+                        {post.likesCount || 0}
+                      </span>
+                    </div>
+                    
                     <span className="text-xs text-gray-500 flex items-center">
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
